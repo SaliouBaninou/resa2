@@ -35,10 +35,15 @@ export async function GET() {
     // add header row
     sheet.addRow(XLSX_HEADERS);
 
-    // need to fetch automation details per response
+    // fetch automation details per response and map rows
     for (const r of rows) {
-      const details = await db.select().from(sql`automation_details`).where(sql`response_id = ${r.id}`);
-      const mapped = mapResponseToRow(r, details as any[]);
+      const details = await db
+        .select()
+        .from(sql`automation_details`)
+        .where(sql`response_id = ${r.id}`);
+
+      // Force mapped to be indexable by string
+      const mapped: Record<string, any> = mapResponseToRow(r, details as any[]);
       const row = XLSX_HEADERS.map((h) => mapped[h] ?? "");
       sheet.addRow(row);
     }
@@ -54,6 +59,9 @@ export async function GET() {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
