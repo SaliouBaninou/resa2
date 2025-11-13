@@ -1,17 +1,27 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getCompanyById } from "@/server/companies";
 import { getResponsesByCompany } from "@/server/responses";
 import { getAutomationDetailsByResponse } from "@/server/automationDetails";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id;
+    const { id } = await context.params; // ✅ nouvelle syntaxe pour Next.js 16
 
     const companyRes = await getCompanyById(id);
-    if (!companyRes.success) return NextResponse.json({ success: false, error: companyRes.message }, { status: 404 });
+    if (!companyRes.success) {
+      return NextResponse.json(
+        { success: false, error: companyRes.message },
+        { status: 404 }
+      );
+    }
 
     const responsesRes = await getResponsesByCompany(id);
-    if (!responsesRes.success) return NextResponse.json({ success: false, error: responsesRes.message }, { status: 500 });
+    if (!responsesRes.success) {
+      return NextResponse.json(
+        { success: false, error: responsesRes.message },
+        { status: 500 }
+      );
+    }
 
     const responses = responsesRes.data ?? [];
 
@@ -27,9 +37,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       }
     }
 
-    return NextResponse.json({ success: true, data: { company: companyRes.data, responses, stats } }, { status: 200 });
+    return NextResponse.json(
+      { success: true, data: { company: companyRes.data, responses, stats } },
+      { status: 200 }
+    );
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
